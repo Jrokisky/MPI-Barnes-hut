@@ -22,11 +22,6 @@ double clamp(double in);
 int get_octant(Particle particle, Space space);
 
 /**
- * Split the given space into its octants.
- */
-void split_space(Space space, Space *sub_spaces[]);
-
-/**
  * Generate a random particle in the given space.
  */
 void generate_random_particles(Particle * p, Space s, int count);
@@ -39,5 +34,7 @@ void print_particle(Particle particle);
 void print_space(Space s);
 
 double compute_distance(Particle *particle, double com_x, double com_y, double com_z);
+
+void update_particle_position_and_velocity(Particle *p);
 
 #endif

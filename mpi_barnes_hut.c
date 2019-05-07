@@ -25,16 +25,16 @@
 #include <string.h>
 
 #include "particle.h"
-#include "bucket.h"
 #include "octree.h"
 
 #define WIDTH 100.0
 #define LENGTH 100.0
 #define HEIGHT 100.0
-#define NUM_PROC 8
 
 int main(int argc, char *argv[]) {
     int npart, t_step, rank, size;
+    double      starttime,endtime;
+    int debug = 1;
 
     // Init MPI.
     MPI_Init( &argc, &argv);
@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
     // Default space.
     Space space = {WIDTH, LENGTH, HEIGHT, 0.0, 0.0, 0.0};
 
+    starttime = MPI_Wtime(); 
     // Process user input
     if (argc < 2) {  
 	    fprintf( stderr, "Usage: %s n timesteps\n", argv[0] ); 
@@ -60,16 +61,26 @@ int main(int argc, char *argv[]) {
     npart = atoi(argv[1]); 
     t_step = atoi(argv[2]);
 
-    OctantBucket * bucket = NULL;
     Particle *particle_array = (Particle *) malloc(npart * sizeof(Particle));
+    for (int i = 0; i < npart; i++) {
+        // init empty.
+        particle_array[i].id = 0;
+        particle_array[i].x = 0.0;
+        particle_array[i].y = 0.0;
+        particle_array[i].z = 0.0;
+        particle_array[i].vel_x = 0.0;
+        particle_array[i].vel_y = 0.0;
+        particle_array[i].vel_z = 0.0;
+        particle_array[i].force_x = 0.0;
+        particle_array[i].force_y = 0.0;
+        particle_array[i].force_z = 0.0;
+        particle_array[i].mass = 0.0;
+    }
     // Process 0 generates and distributes random particles.
     if ( rank == 0 ) {
         srand(time(NULL));
         // Generate random particles.
         generate_random_particles(particle_array, space, npart);
-        for (int i = 0; i < npart; i++) {
-            add_to_bucket(&bucket, &(particle_array[i]));
-        }
 
         // Broadcast particle data.
         MPI_Bcast(particle_array, npart, mpi_particle_type, 0, MPI_COMM_WORLD);
@@ -77,17 +88,17 @@ int main(int argc, char *argv[]) {
     else {
         // Get random particles from root node. 
         MPI_Bcast(particle_array, npart, mpi_particle_type, 0, MPI_COMM_WORLD);
-        for (int i = 0; i < npart; i++) {
-            // Add Particle to bucket.
-            add_to_bucket(&bucket, &(particle_array[i]));
-        }
     }
+
+    MPI_Barrier(MPI_COMM_WORLD);
 
     for (int i = t_step; i > 0; i--) {
         // Each process builds the whole tree and computes centers of mass.
-        Octree * octree = build_octree(bucket, space);
-        compute_center_of_mass(octree);
-        
+        Octree * octree = create_empty_octree(space);
+        for (int j = 0; j < npart; j++) {
+            octree_insert(octree, space, &(particle_array[j]));
+        }
+
         int chunk = 0;
         int last_chunk = 0;
         // Split particles into chunks.
@@ -110,7 +121,7 @@ int main(int argc, char *argv[]) {
         free_octree(octree);
 
         // Share this processes updated particle data with everyone else.
-        for (int q = 0; q < 0; q++) { //size; q++) {
+        for (int q = 0; q < size; q++) {
             // last chunk.
             if (size > 1 && q == (size-1)) chunk = last_chunk;
             Particle * updated_particles = (Particle *) malloc(chunk * sizeof(Particle));
@@ -164,8 +175,8 @@ int main(int argc, char *argv[]) {
     // Free Particles. 
     free(particle_array);
 
-    // Free bucket.
-    free_bucket(bucket);
+    endtime = MPI_Wtime() - starttime; 
+    if(rank == 0) printf("Run Time: %f | Num Particles: %d | Num Steps: %d\n", endtime, npart, t_step);
     MPI_Finalize();
     return 0;
 }

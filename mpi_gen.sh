@@ -3,16 +3,16 @@
 mydir=$PWD
 rm anim.gif
 rm timedat.0
-mpicc -o mpi-barnes-hut mpi_barnes_hut.c bucket.c octree.c particle.c -lm
-mpirun -np 8 ./mpi-barnes-hut $1 $2
+mpicc -o mpi-barnes-hut mpi_barnes_hut.c octree.c particle.c -lm
+mpirun -np $1 ./mpi-barnes-hut $2 $3
 
 #performn visualization
 test=0;
-while (($test <= $2-1))
+while (($test <= $3-1))
 do
-echo "set xrange [-250.0:250.0]
+echo "set xrange [-50.0:100.0]
 set title \"$1 particles at timestep $test\"
-set yrange [-250.0:250.0]
+set yrange [-50.0:100.0]
 set timestamp top offset 15 
 set grid
 set term gif size 1280,1280

@@ -41,36 +41,6 @@ int get_octant(Particle particle, Space space)
     return octant;
 }
 
-void split_space(Space space, Space *sub_spaces[])
-{
-    double mid_x = (space.origin_x + space.boundary_x)/2.0;
-    double mid_y = (space.origin_y + space.boundary_y)/2.0;
-    double mid_z = (space.origin_z + space.boundary_z)/2.0;
-
-    // BOTTOM    TOP
-    //  __ __   __ __
-    // |2 |3 | |6 |7 |
-    // |__|__| |__|__|
-    // |0 |1 | |4 |5 |
-    // |__|__| |__|__|
-        
-    for (int i = 0; i < 8; i++) {
-        // Check if this octant is greater than the midpoint on different axis.
-        bool gt_mid_x = i & (1 << 0);
-        bool gt_mid_y = i & (1 << 1);
-        bool gt_mid_z = i & (1 << 2);
-
-        Space *octant = (Space *) malloc(sizeof(Space));
-        octant->boundary_x = gt_mid_x ? space.boundary_x : mid_x;
-        octant->origin_x = gt_mid_x ? mid_x : space.origin_x;
-        octant->boundary_y = gt_mid_y ? space.boundary_y : mid_y;
-        octant->origin_y = gt_mid_y ? mid_y : space.origin_y;
-        octant->boundary_z = gt_mid_z ? space.boundary_z : mid_z;
-        octant->origin_z = gt_mid_z ? mid_z : space.origin_z;
-        sub_spaces[i] = octant;
-    }
-}
-
 void generate_random_particles(Particle * p, Space space, int count) 
 {
     for (int i = 0; i < count; i++) {
@@ -84,19 +54,19 @@ void generate_random_particles(Particle * p, Space space, int count)
         p[i].vel_x = 0.0;//drand_custom(-100.0, 100.0);
         p[i].vel_y = 0.0;//drand_custom(-100.0, 100.0);
         p[i].vel_z = 0.0;//drand_custom(-100.0, 100.0);
-        p[i].mass = 10000.0;//drand_custom(10000.0, 100000.0);
+        p[i].mass = 300000000.0;//drand_custom(10000.0, 100000.0);
         p[i].id = i;
     }
 }
 
 void print_particle(Particle p)
 {
-    printf("id: %d | location: (%f, %f, %f) | mass: %f | force: (%f, %f, %f)", p.id, p.x, p.y, p.z, p.mass, p.force_x, p.force_y, p.force_z);
+    printf("id: %d | location: (%f, %f, %f) | mass: %f | force: (%f, %f, %f)\n", p.id, p.x, p.y, p.z, p.mass, p.force_x, p.force_y, p.force_z);
 }
 
 void print_space(Space s)
 {
-    printf("origin: (%f, %f, %f) | boundary: (%f, %f, %f)", s.origin_x, s.origin_y, s.origin_z, s.boundary_x, s.boundary_y, s.boundary_z);
+    printf("origin: (%f, %f, %f) | boundary: (%f, %f, %f)\n", s.origin_x, s.origin_y, s.origin_z, s.boundary_x, s.boundary_y, s.boundary_z);
 }
 
 double compute_distance(Particle *particle, double com_x, double com_y, double com_z)
@@ -104,5 +74,27 @@ double compute_distance(Particle *particle, double com_x, double com_y, double c
     return sqrt( clamp(pow(particle->x - com_x, 2)) + clamp(pow(particle->y - com_y, 2)) + clamp(pow(particle->z - com_z, 2)));
 }
 
+void update_particle_position_and_velocity(Particle *p)
+{
+    double dt = 0.001;
+    double acc_x = clamp(p->force_x / p->mass);
+    double acc_y = clamp(p->force_y / p->mass);
+    double acc_z = clamp(p->force_z / p->mass);
 
+    // Compute middle of timestep velocity.
+    double v_mid_x = p->vel_x + clamp( 0.5 * dt * acc_x);
+    double v_mid_y = p->vel_y + clamp( 0.5 * dt * acc_y);
+    double v_mid_z = p->vel_z + clamp( 0.5 * dt * acc_z);
+
+    // Compute new position.
+    double prev = p->x;
+    p->x = p->x + clamp( dt * v_mid_x);
+    p->y = p->y + clamp( dt * v_mid_y);
+    p->z = p->z + clamp( dt * v_mid_z);
+
+    // Compute second half of velocity.
+    p->vel_x = v_mid_x + clamp( 0.5 * dt * acc_x );    
+    p->vel_y = v_mid_y + clamp( 0.5 * dt * acc_y );    
+    p->vel_z = v_mid_z + clamp( 0.5 * dt * acc_z );
+}
 

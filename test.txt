@@ -1,2 +1,0 @@
-mpirun -np 8 xterm -hold -e valgrind --undef-value-errors=no ./mpi-barnes-hut 10 20
-
