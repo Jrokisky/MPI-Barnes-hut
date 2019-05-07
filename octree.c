@@ -24,6 +24,7 @@ Octree * create_empty_octree(Space space)
     octree->com_z = 0.0;
     octree->box_size = space.boundary_x - space.origin_x;
     octree->num_leaves = 0;
+    octree->space = space;
     return octree;
 }
 
@@ -133,13 +134,14 @@ void print_octree(Octree *octree, int indent)
     }
     else if (octree->value == NULL) {
         printf("---");
-        printf(" Mass: %f | CoM: (%f, %f, %f) | Box: %f | NumLeaves: %d\n",
+        printf(" Mass: %f | CoM: (%f, %f, %f) | ",
                 octree->total_mass,
                 octree->com_x,
                 octree->com_y,
-                octree->com_z,
-                octree->box_size,
-                octree->num_leaves);
+                octree->com_z);
+        print_space(octree->space);
+        printf("\n");
+
         for (int i = 0; i < 8; i++) {
             print_octree((octree->children)[i], indent+1);
         }

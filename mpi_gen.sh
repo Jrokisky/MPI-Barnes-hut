@@ -10,9 +10,9 @@ mpirun -np $1 ./mpi-barnes-hut $2 $3
 test=0;
 while (($test <= $3-1))
 do
-echo "set xrange [-50.0:100.0]
-set title \"$1 particles at timestep $test\"
-set yrange [-50.0:100.0]
+echo "set xrange [0.0:100.0]
+set title \"$2 particles at timestep $test\"
+set yrange [0.0:100.0]
 set timestamp top offset 15 
 set grid
 set term gif size 1280,1280

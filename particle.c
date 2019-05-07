@@ -44,9 +44,9 @@ int get_octant(Particle particle, Space space)
 void generate_random_particles(Particle * p, Space space, int count) 
 {
     for (int i = 0; i < count; i++) {
-        double x = drand_custom(0.0, space.boundary_x);
-        double y = drand_custom(0.0, space.boundary_y);
-        double z = drand_custom(0.0, space.boundary_z);
+        double x = drand_custom(0.0, 100.0);
+        double y = drand_custom(0.0, 100.0);
+        double z = drand_custom(0.0, 100.0);
 
         p[i].x = x;
         p[i].y = y;
@@ -54,7 +54,7 @@ void generate_random_particles(Particle * p, Space space, int count)
         p[i].vel_x = 0.0;//drand_custom(-100.0, 100.0);
         p[i].vel_y = 0.0;//drand_custom(-100.0, 100.0);
         p[i].vel_z = 0.0;//drand_custom(-100.0, 100.0);
-        p[i].mass = 300000000.0;//drand_custom(10000.0, 100000.0);
+        p[i].mass = 1000000.0;//drand_custom(1000.0, 100000.0);
         p[i].id = i;
     }
 }
@@ -96,5 +96,16 @@ void update_particle_position_and_velocity(Particle *p)
     p->vel_x = v_mid_x + clamp( 0.5 * dt * acc_x );    
     p->vel_y = v_mid_y + clamp( 0.5 * dt * acc_y );    
     p->vel_z = v_mid_z + clamp( 0.5 * dt * acc_z );
+}
+
+bool in_space(Space s, Particle p)
+{
+    return 
+        (p.x > s.origin_x)
+        && (p.x < s.boundary_x)
+        && (p.y > s.origin_y)
+        && (p.y < s.boundary_y)
+        && (p.z > s.origin_z)
+        && (p.z < s.boundary_z);
 }
 

@@ -10,6 +10,7 @@ typedef struct Octree {
     double com_x, com_y, com_z;
     double box_size;
     int num_leaves;
+    Space space;
 } Octree;
 
 Octree * create_empty_octree(Space space);

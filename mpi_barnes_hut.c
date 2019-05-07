@@ -2,20 +2,8 @@
  * Implementation of the Barnes Hut Algorithm using MPI.
  * 
  * Author: Justin Rokisky
- * To compile: mpicc -o mpi-barnes-hut mpi_barnes_hut.c bucket.c octree.c particle.c -lm
+ * To compile: mpicc -o mpi-barnes-hut mpi_barnes_hut.c octree.c particle.c -lm
  * To run: ./mpi_gen.sh NUM_PARTICLES NUM_TIMESTEPS
- * 
- * Design decisions:
- *  -> Currently only runs with 8 processes
- *  -> Each process builds a copy of the tree on its machine
- *  -> Each process independently takes one of the 8 subtrees and updates the
- *     position and velocity of the leafs in that tree.
- *  -> The tree is constructed from the bottom up. At each level, particles are
- *     split in the octants they will end up in, and then recursively passed 
- *     into the build_octree function.My original plan was to parallelize the
- *     tree construction but was unable to build a data structure that could 
- *     accomplish passing the tree pieces.
- *
  *****************************************************************************/
 
 #include "mpi.h"
@@ -23,18 +11,24 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <float.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 #include "particle.h"
 #include "octree.h"
 
-#define WIDTH 100.0
-#define LENGTH 100.0
-#define HEIGHT 100.0
+#define WIDTH 99999.0
+#define LENGTH 99999.0
+#define HEIGHT 99999.0
+
+#define ORIGIN_X -99999.0
+#define ORIGIN_Y -99999.0
+#define ORIGIN_Z -99999.0
 
 int main(int argc, char *argv[]) {
     int npart, t_step, rank, size;
     double      starttime,endtime;
-    int debug = 1;
 
     // Init MPI.
     MPI_Init( &argc, &argv);
@@ -43,14 +37,27 @@ int main(int argc, char *argv[]) {
     MPI_Datatype mpi_particle_type;
 
     // Create MPI_Datatype for sending particles.
-    MPI_Aint displacements_c[11] = {0, 4, 12, 20, 28, 36, 44, 52, 60, 68, 76};
+    MPI_Aint displacements_c[11] = {
+        offsetof(Particle, id), 
+        offsetof(Particle, x), 
+        offsetof(Particle, y), 
+        offsetof(Particle, z), 
+        offsetof(Particle, vel_x), 
+        offsetof(Particle, vel_y), 
+        offsetof(Particle, vel_z), 
+        offsetof(Particle, force_x), 
+        offsetof(Particle, force_y), 
+        offsetof(Particle, force_z), 
+        offsetof(Particle, mass)
+    }; 
+        
     int block_lengths_c[11] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
     MPI_Datatype dtypes_c[11] = {MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE};
     MPI_Type_create_struct( 11, block_lengths_c, displacements_c, dtypes_c, &mpi_particle_type );
     MPI_Type_commit( &mpi_particle_type );
 
     // Default space.
-    Space space = {WIDTH, LENGTH, HEIGHT, 0.0, 0.0, 0.0};
+    Space space = {WIDTH, LENGTH, HEIGHT, ORIGIN_X, ORIGIN_Y, ORIGIN_Z}; 
 
     starttime = MPI_Wtime(); 
     // Process user input
@@ -96,49 +103,63 @@ int main(int argc, char *argv[]) {
         // Each process builds the whole tree and computes centers of mass.
         Octree * octree = create_empty_octree(space);
         for (int j = 0; j < npart; j++) {
-            octree_insert(octree, space, &(particle_array[j]));
+            if (in_space(space,particle_array[j])) {
+                octree_insert(octree, space, &(particle_array[j]));
+            }
         }
 
         int chunk = 0;
         int last_chunk = 0;
         // Split particles into chunks.
-        if (npart / size == 0 || size == 1) {
+        if ((npart / size) == 0) {
             chunk = npart / size;
             last_chunk = chunk;
         }
         else {
-            chunk = npart / (size - 1);
-            last_chunk = npart % size;
+            chunk = npart / size;
+            last_chunk = npart - ((size-1) * chunk);
         }
+
 
         // Each process processes its chunk.
-        for (int idx = rank * chunk; idx < npart; idx++) {
+        int startpos = rank * chunk;
+        int endpos = rank == (size-1) ? npart : rank * chunk + chunk;
+        for (int idx = startpos; idx < endpos; idx++) {
             Particle *tmp_p = &(particle_array[idx]);
-            compute_force(tmp_p, octree);
-            update_particle_position_and_velocity(tmp_p);
+            if (in_space(space, particle_array[idx])) {
+                compute_force(tmp_p, octree);
+                update_particle_position_and_velocity(tmp_p);
+            }
         }
+
         // No longer need the octree.
         free_octree(octree);
-
         // Share this processes updated particle data with everyone else.
         for (int q = 0; q < size; q++) {
             // last chunk.
-            if (size > 1 && q == (size-1)) chunk = last_chunk;
-            Particle * updated_particles = (Particle *) malloc(chunk * sizeof(Particle));
+            int tmp_chunk = (q == (size-1)) ? last_chunk : chunk;
+
+            Particle * updated_particles = (Particle *) malloc(tmp_chunk * sizeof(Particle));
 
             if (q == rank) {
-                for (int f = 0; f < chunk; f++) {
+                for (int f = 0; f < tmp_chunk; f++) {
                     int idx = rank * chunk + f;
-                    memcpy(updated_particles + f, &(particle_array[idx]), sizeof(Particle));
+                    updated_particles[f].id = particle_array[idx].id;
+                    updated_particles[f].x = particle_array[idx].x;
+                    updated_particles[f].y = particle_array[idx].y;
+                    updated_particles[f].z = particle_array[idx].z;
+                    updated_particles[f].vel_x = particle_array[idx].vel_x;
+                    updated_particles[f].vel_y = particle_array[idx].vel_y;
+                    updated_particles[f].vel_z = particle_array[idx].vel_z;
                 }       
             }
 
             // Perform the broadcast.
-            MPI_Bcast( updated_particles, chunk, mpi_particle_type, q, MPI_COMM_WORLD );
+            MPI_Bcast( updated_particles, tmp_chunk, mpi_particle_type, q, MPI_COMM_WORLD );
 
             if (q != rank) {
                 // Update particles.
-                for (int k = 0; k < chunk; k++) {
+                for (int k = 0; k < tmp_chunk; k++) {
                     // Get the index of the particle that needs updating.
                     int idx = updated_particles[k].id;
                     if (particle_array[idx].id == idx) {
@@ -148,11 +169,11 @@ int main(int argc, char *argv[]) {
                         particle_array[idx].vel_x = updated_particles[k].vel_x;
                         particle_array[idx].vel_y = updated_particles[k].vel_y;
                         particle_array[idx].vel_z = updated_particles[k].vel_z;
-
                     }
                     else {
                         printf("WOT\n");
                     }
+
                 }
             }
             free(updated_particles);
@@ -164,7 +185,9 @@ int main(int argc, char *argv[]) {
             // Print particles in proper format.
             for (int step = 0; step < npart; step++) {
                 Particle p = particle_array[step];
-                fprintf(fp,"%d %d %d %f %f %f\n",0, p.id, i, p.x, p.y, p.z);
+                if (in_space(space, p)) {
+                    fprintf(fp,"%d %d %d %f %f %f\n",0, p.id, i, p.x, p.y, p.z);
+                }
             }
             fprintf(fp, "\n\n");
             fclose(fp);
@@ -176,7 +199,7 @@ int main(int argc, char *argv[]) {
     free(particle_array);
 
     endtime = MPI_Wtime() - starttime; 
-    if(rank == 0) printf("Run Time: %f | Num Particles: %d | Num Steps: %d\n", endtime, npart, t_step);
+    if(rank == 0) printf("Processor Count: %d | Num Particles: %d | Num Steps: %d | Run Time: %f |\n", size, npart, t_step, endtime);
     MPI_Finalize();
     return 0;
 }

@@ -22,13 +22,14 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <float.h>
 
 #include "particle.h"
 #include "octree.h"
 
-#define WIDTH 100.0
-#define LENGTH 100.0
-#define HEIGHT 100.0
+#define WIDTH 99999.0
+#define LENGTH 99999.0
+#define HEIGHT 99999.0
 
 int main(int argc, char *argv[]) {
     int npart, t_step, rank, size;
@@ -36,7 +37,7 @@ int main(int argc, char *argv[]) {
     int debug = 1;
 
     // Default space.
-    Space space = {WIDTH, LENGTH, HEIGHT, 0.0, 0.0, 0.0};
+    Space space = {WIDTH, LENGTH, HEIGHT, ORIGIN_X, ORIGIN_Y, ORIGIN_Z}; 
 
     // Process user input
     if (argc < 2) {  
@@ -68,14 +69,18 @@ int main(int argc, char *argv[]) {
         // Each process builds the whole tree and computes centers of mass.
         Octree * octree = create_empty_octree(space);
         for (int j = 0; j < npart; j++) {
-            octree_insert(octree, space, &(particle_array[j]));
+            if (in_space(space,particle_array[j])) {
+                octree_insert(octree, space, &(particle_array[j]));
+            }
         }
 
         // Each process processes its chunk.
         for (int idx = 0; idx < npart; idx++) {
             Particle *tmp_p = &(particle_array[idx]);
-            compute_force(tmp_p, octree);
-            update_particle_position_and_velocity(tmp_p);
+            if (in_space(space, particle_array[idx])) {
+                compute_force(tmp_p, octree);
+                update_particle_position_and_velocity(tmp_p);
+            }
         }
         // No longer need the octree.
         free_octree(octree);
@@ -85,7 +90,9 @@ int main(int argc, char *argv[]) {
         // Print particles in proper format.
         for (int step = 0; step < npart; step++) {
             Particle p = particle_array[step];
-            fprintf(fp,"%d %d %d %f %f %f\n",0, p.id, i, p.x, p.y, p.z);
+            if (in_space(space, p)) {
+                fprintf(fp,"%d %d %d %f %f %f\n",0, p.id, i, p.x, p.y, p.z);
+            }
         }
         fprintf(fp, "\n\n");
         fclose(fp);

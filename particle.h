@@ -37,4 +37,6 @@ double compute_distance(Particle *particle, double com_x, double com_y, double c
 
 void update_particle_position_and_velocity(Particle *p);
 
+bool in_space(Space s, Particle p);
+
 #endif

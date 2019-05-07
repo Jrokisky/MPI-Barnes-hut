@@ -10,9 +10,10 @@ g++ -g serial_barnes_hut.c particle.c octree.c -o serial-barnes-hut
 test=0;
 while (($test <= $2-1))
 do
-echo "set xrange [0.0:150.0]
+echo "set xrange [0.0:100.0]
 set title \"$1 particles at timestep $test\"
-set yrange [0.0:150.0]
+set yrange [0.0:100.0]
+set zrange [0.0:100.0]
 set timestamp top offset 15 
 set grid
 set term gif size 1280,1280
