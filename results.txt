@@ -1,33 +1,29 @@
-Processor Count: 1 | Num Particles: 100 | Num Steps: 1000 | Run Time: 3.294050 |
+Processor Count: 1 | Num Particles: 100 | Num Steps: 1000 | Run Time: 1.763997 |
 
-Processor Count: 1 | Num Particles: 200 | Num Steps: 1000 | Run Time: 8.503332 |
+Processor Count: 1 | Num Particles: 200 | Num Steps: 1000 | Run Time: 4.870025 |
 
-Processor Count: 1 | Num Particles: 400 | Num Steps: 1000 | Run Time: 27.333387 |
+Processor Count: 1 | Num Particles: 400 | Num Steps: 1000 | Run Time: 12.897247 |
 
-Processor Count: 1 | Num Particles: 800 | Num Steps: 1000 | Run Time: 61.660727 |
+Processor Count: 1 | Num Particles: 800 | Num Steps: 1000 | Run Time: 39.006507 |
 
-Processor Count: 2 | Num Particles: 100 | Num Steps: 1000 | Run Time: 2.051097 |
+Processor Count: 2 | Num Particles: 100 | Num Steps: 1000 | Run Time: 1.095352 |
 
-Processor Count: 2 | Num Particles: 200 | Num Steps: 1000 | Run Time: 5.419237 |
+Processor Count: 2 | Num Particles: 200 | Num Steps: 1000 | Run Time: 3.046061 |
 
-Processor Count: 2 | Num Particles: 400 | Num Steps: 1000 | Run Time: 14.836960 |
+Processor Count: 2 | Num Particles: 400 | Num Steps: 1000 | Run Time: 8.181785 |
 
-Processor Count: 2 | Num Particles: 800 | Num Steps: 1000 | Run Time: 40.309721 |
+Processor Count: 2 | Num Particles: 800 | Num Steps: 1000 | Run Time: 20.118182 |
 
-Processor Count: 4 | Num Particles: 100 | Num Steps: 1000 | Run Time: 2.234102 |
+Processor Count: 4 | Num Particles: 100 | Num Steps: 1000 | Run Time: 0.922228 |
 
-Processor Count: 4 | Num Particles: 200 | Num Steps: 1000 | Run Time: 4.921683 |
+Processor Count: 4 | Num Particles: 200 | Num Steps: 1000 | Run Time: 2.379759 |
 
-Processor Count: 4 | Num Particles: 400 | Num Steps: 1000 | Run Time: 13.358658 |
+Processor Count: 4 | Num Particles: 400 | Num Steps: 1000 | Run Time: 6.089563 |
 
-Processor Count: 4 | Num Particles: 800 | Num Steps: 1000 | Run Time: 31.499089 |
+Processor Count: 4 | Num Particles: 800 | Num Steps: 1000 | Run Time: 16.440609 |
 
-Processor Count: 8 | Num Particles: 100 | Num Steps: 1000 | Run Time: 2.802661 |
 
-Processor Count: 8 | Num Particles: 200 | Num Steps: 1000 | Run Time: 7.143621 |
 
-Processor Count: 8 | Num Particles: 400 | Num Steps: 1000 | Run Time: 15.223321 |
 
-Processor Count: 8 | Num Particles: 800 | Num Steps: 1000 | Run Time: 37.573036 |
 
 

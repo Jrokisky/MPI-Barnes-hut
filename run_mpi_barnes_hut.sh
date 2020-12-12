@@ -1,26 +1,26 @@
 #!/bin/bash
+
 #Workflow script for particle sim
 mydir=$PWD
 rm anim.gif
 rm timedat.0
-g++ -g serial_barnes_hut.c particle.c octree.c -o serial-barnes-hut
-./serial-barnes-hut $1 $2
+mpicc -o mpi-barnes-hut mpi_barnes_hut.c octree.c particle.c -lm
+mpirun -np $1 ./mpi-barnes-hut $2 $3
 
 #performn visualization
-test=0;
-while (($test <= $2-1))
+i=0;
+while (($i <= $3-1))
 do
 echo "set xrange [0.0:100.0]
-set title \"$1 particles at timestep $test\"
+set title \"$2 particles at timestep $i\"
 set yrange [0.0:100.0]
-set zrange [0.0:100.0]
 set timestamp top offset 15 
 set grid
 set term gif size 1280,1280
-set output '$test.gif'
-plot \"timedat.0\" i $test u 4:5 pt 3  ps 1 t \"Node 0\";" >data_$test.gnu
-gnuplot data_$test.gnu
-let test=$test+1
+set output '$i.gif'
+plot \"timedat.0\" i $i u 4:5 pt 3  ps 1 t \"Node 0\";" >data_$i.gnu
+gnuplot data_$i.gnu
+let i=$i+1
 done
 
 #cleanup

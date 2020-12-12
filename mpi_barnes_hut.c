@@ -2,9 +2,22 @@
  * Implementation of the Barnes Hut Algorithm using MPI.
  * 
  * Author: Justin Rokisky
- * To compile: mpicc -o mpi-barnes-hut mpi_barnes_hut.c octree.c particle.c -lm
+ * To compile: mpicc -o mpi-barnes-hut mpi_barnes_hut.c bucket.c octree.c particle.c -lm
  * To run: ./mpi_gen.sh NUM_PARTICLES NUM_TIMESTEPS
+ * 
+ * Design decisions:
+ *  -> Currently only runs with 8 processes
+ *  -> Each process builds a copy of the tree on its machine
+ *  -> Each process independently takes one of the 8 subtrees and updates the
+ *     position and velocity of the leafs in that tree.
+ *  -> The tree is constructed from the bottom up. At each level, particles are
+ *     split in the octants they will end up in, and then recursively passed 
+ *     into the build_octree function.My original plan was to parallelize the
+ *     tree construction but was unable to build a data structure that could 
+ *     accomplish passing the tree pieces.
+ *
  *****************************************************************************/
+
 
 #include "mpi.h"
 #include <stdio.h>
