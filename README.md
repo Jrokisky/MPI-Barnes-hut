@@ -12,7 +12,7 @@ The `gifmerge` executable needs to be compiled first. This can be done by runnin
 gcc gifmerge.c gifmerge.h -o gifmerge
 ```
 
-# Running
+## Running
 
 The following scripts will generate a gif of the simulation in the `anim.gif` file
 
